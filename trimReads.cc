@@ -38,7 +38,7 @@ struct Options
     int quality_encoding;
 };
 
-Options DEFAULTS = {15, 2, 20, 15, 64}, opts;
+Options DEFAULTS = {15, 4, 20, 15, 64}, opts;
 const int SangerOffset = 33;
 const int IlluminaOffset = 64;
 
@@ -96,7 +96,8 @@ int main (int argc, char const * argv[])
     CommandLineParser p("trimReads");
     addOption(p, CommandLineOption('o', "outfile",
                                    "Output file name, uses Sanger encoding for quality. "
-                                   "(default )", OptionType::String));
+                                   "(default replace suffix with .trimmed.fastq)", 
+                                   OptionType::String));
     addOption(p, CommandLineOption('s', "score",
                                    "Minimum score to call adapter match. "
                                    "Default scoring scheme for +1 match, "
@@ -208,7 +209,7 @@ int main (int argc, char const * argv[])
     CharString qual;
     CharString id;
     int deduction = opts.quality_encoding + opts.quality_cutoff;
-    int offsetDiff = SangerOffset - IlluminaOffset;
+    int offsetDiff = SangerOffset - opts.quality_encoding;
 
     for (unsigned i = 0; i < seqCount; i++)
     {
