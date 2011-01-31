@@ -1,4 +1,4 @@
-/* 
+/*
  * Trim artificial base pairs within fastq reads.
  *
  * Author: Haibao Tang <htang@jcvi.org>
@@ -6,14 +6,14 @@
  * License: BSD
  *
  * Trim given adapters by using local alignments, up to N times to deal
- * with chimeric adapters; poly-ACGT tails can also be removed if asked. 
- * 
+ * with chimeric adapters; poly-ACGT tails can also be removed if asked.
+ *
  * Trimmed regions will be given low phred quality (2) and then perform a
  * quality trim. The algorithm for quality trim is similar to bwa quality trim.
- * All quality values will deduct a CUTOFF value (specified by the user) and 
+ * All quality values will deduct a CUTOFF value (specified by the user) and
  * the max sum segment within the quality string will then be used as the final
  * `trimmed` region.
- * 
+ *
  * Input is a fastq file, output is a trimmed fastq file with Sanger encoding of
  * quality values.
  */
@@ -40,9 +40,9 @@ struct Options
 
 Options DEFAULTS = {15, 2, 20, 15, 64}, opts;
 
-int qualityTrim(CharString &seq, CharString &qual, 
-        unsigned &trimStart, unsigned &trimEnd,
-        int offset, int cutoff)
+int qualityTrim(CharString &seq, CharString &qual,
+                unsigned &trimStart, unsigned &trimEnd,
+                int offset, int cutoff)
 {
     /* Maximum subarray problem, described in wiki
      * using Kadane's algorithm
@@ -61,7 +61,7 @@ int qualityTrim(CharString &seq, CharString &qual,
 
     for (unsigned j = 0; j < seqlen; j++)
     {
-    	qv = (int)(ordValue(qual[j]) - offset - cutoff);
+        qv = (int)(ordValue(qual[j]) - offset - cutoff);
         currentMaxSum += qv;
 
         if (currentMaxSum > maxSum)
@@ -82,32 +82,32 @@ int qualityTrim(CharString &seq, CharString &qual,
 
 int main (int argc, char const * argv[])
 {
-	SEQAN_PROTIMESTART(loadTime);
+    SEQAN_PROTIMESTART(loadTime);
     CommandLineParser p("trimReads");
     addOption(p, CommandLineOption('o', "outfile",
-                "Output file name, uses Sanger encoding for quality. "
-                "(default )", OptionType::String));
-    addOption(p, CommandLineOption('s', "score", 
-                "Minimum score to call adapter match. "
-                "Default scoring scheme for +1 match, "
-                "-3 for mismatch/gapOpen/gapExtension.",
-                OptionType::Int, DEFAULTS.score));
+                                   "Output file name, uses Sanger encoding for quality. "
+                                   "(default )", OptionType::String));
+    addOption(p, CommandLineOption('s', "score",
+                                   "Minimum score to call adapter match. "
+                                   "Default scoring scheme for +1 match, "
+                                   "-3 for mismatch/gapOpen/gapExtension.",
+                                   OptionType::Int, DEFAULTS.score));
     addOption(p, CommandLineOption('n', "times",
-                "Try to remove the adapters at most COUNT times. "
-                "Useful when an adapter gets appended multiple times.",
-                OptionType::Int, DEFAULTS.times));
-    addOption(p, CommandLineOption('q', "quality-cutoff", 
-                "Trim low-quality regions below quality cutoff. "
-                "The algorithm is similar to the one used by BWA "
-                "by finding a max-sum segment within the quality string.", 
-                OptionType::Int, DEFAULTS.quality_cutoff));
-    addOption(p, CommandLineOption('m', "minimum-length", 
-                "Discard trimmed reads that are shorter than LENGTH.", 
-                OptionType::Int, DEFAULTS.minimum_length));
+                                   "Try to remove the adapters at most COUNT times. "
+                                   "Useful when an adapter gets appended multiple times.",
+                                   OptionType::Int, DEFAULTS.times));
+    addOption(p, CommandLineOption('q', "quality-cutoff",
+                                   "Trim low-quality regions below quality cutoff. "
+                                   "The algorithm is similar to the one used by BWA "
+                                   "by finding a max-sum segment within the quality string.",
+                                   OptionType::Int, DEFAULTS.quality_cutoff));
+    addOption(p, CommandLineOption('m', "minimum-length",
+                                   "Discard trimmed reads that are shorter than LENGTH.",
+                                   OptionType::Int, DEFAULTS.minimum_length));
     addOption(p, CommandLineOption('Q', "quality-encoding",
-                "Read quality encoding for input file. 64 for Illumina, "
-                "33 for Sanger. Output will always be Sanger encoding.",
-                OptionType::Int, DEFAULTS.quality_encoding));
+                                   "Read quality encoding for input file. 64 for Illumina, "
+                                   "33 for Sanger. Output will always be Sanger encoding.",
+                                   OptionType::Int, DEFAULTS.quality_encoding));
 
     addTitleLine(p, "Illumina reads trimming utility");
     addTitleLine(p, "Author: Haibao Tang <htang@jcvi.org>");
@@ -148,16 +148,16 @@ int main (int argc, char const * argv[])
     getOptionValueLong(p, "minimum-length", opts.minimum_length);
     getOptionValueLong(p, "quality-encoding", opts.quality_encoding);
 
-	MultiSeqFile multiSeqFile;
-	if (argc < 2 || !open(multiSeqFile.concat, toCString(infile), OPEN_RDONLY))
-		return 1;
+    MultiSeqFile multiSeqFile;
+    if (argc < 2 || !open(multiSeqFile.concat, toCString(infile), OPEN_RDONLY))
+        return 1;
 
     // Guess the format of the input, although currently only fastq is supported
-	AutoSeqFormat format;
-	guessFormat(multiSeqFile.concat, format);
-	split(multiSeqFile, format);
+    AutoSeqFormat format;
+    guessFormat(multiSeqFile.concat, format);
+    split(multiSeqFile, format);
 
-	unsigned seqCount = length(multiSeqFile);
+    unsigned seqCount = length(multiSeqFile);
     unsigned tooShorts = 0;
 
     // Adapter library, default is Illumina PE library adapters
@@ -180,7 +180,7 @@ int main (int argc, char const * argv[])
     CharString Ns = "NNNNN"; // use N's to break alignments across adapters
     for (unsigned i = 1; i < nadapters; i++)
     {
-        append(adapterdb, Ns); 
+        append(adapterdb, Ns);
         startpos[i] = length(adapterdb);
         append(adapterdb, adapters[i]);
     }
@@ -193,15 +193,15 @@ int main (int argc, char const * argv[])
     resize(rows(ali), 2);
     assignSource(row(ali, 0), adapterdb);
 
-	CharString seq;
-	CharString qual;
-	CharString id;
+    CharString seq;
+    CharString qual;
+    CharString id;
 
-	for (unsigned i = 0; i < seqCount; i++)
-	{
-		assignSeqId(id, multiSeqFile[i], format);   // read sequence id
-		assignSeq(seq, multiSeqFile[i], format);    // read sequence
-		assignQual(qual, multiSeqFile[i], format);  // read ascii quality values
+    for (unsigned i = 0; i < seqCount; i++)
+    {
+        assignSeqId(id, multiSeqFile[i], format);   // read sequence id
+        assignSeq(seq, multiSeqFile[i], format);    // read sequence
+        assignQual(qual, multiSeqFile[i], format);  // read ascii quality values
 
         assignSource(row(ali, 1), seq);
         LocalAlignmentFinder<> finder(ali);
@@ -214,17 +214,17 @@ int main (int argc, char const * argv[])
 
             for (unsigned j = clipStart; j < clipEnd; j++)
                 qual[j] = (char) (2 + opts.quality_encoding);
-            
+
             // find out which adapters generated the alignment
             unsigned dbStart = clippedBeginPosition(row(ali, 0));
-            unsigned idx;  
+            unsigned idx;
             for (idx = 0; idx < nadapters; idx++)
             {
                 if (startpos[idx] > dbStart) break;
             }
             idx--; // bisect startpos
             adapterCounts[idx]++;
-            count++; 
+            count++;
 
             /*
             unsigned dbEnd = clippedEndPosition(row(ali, 0));
@@ -238,9 +238,9 @@ int main (int argc, char const * argv[])
         unsigned trimStart = 0, trimEnd = 0;
         // results are [trimStart, trimEnd] (inclusive on ends)
         qualityTrim(seq, qual, trimStart, trimEnd,
-                opts.quality_encoding, opts.quality_cutoff);
+                    opts.quality_encoding, opts.quality_cutoff);
 
-        if ((trimEnd - trimStart + 1) < (unsigned) opts.minimum_length) 
+        if ((trimEnd - trimStart + 1) < (unsigned) opts.minimum_length)
         {
             tooShorts++;
             continue;
@@ -250,24 +250,24 @@ int main (int argc, char const * argv[])
         fout << infix(seq, trimStart, trimEnd+1) << endl;
         fout << "+" << endl;
         fout << infix(qual, trimStart, trimEnd+1) << endl;
-	}
+    }
 
     fout.close();
 
     for (unsigned i = 0; i < nadapters; i++)
     {
         cerr << "[" << i <<"] " << adapters[i] << " found "
-                  << adapterCounts[i] << " times" << endl;
+             << adapterCounts[i] << " times" << endl;
     }
 
     // Write a report of the trimming
     cerr << endl;
-    cerr << "A total of " << tooShorts << " too short (trimmed length < " 
-              << opts.minimum_length << ") reads removed" << endl;
-    cerr << "Trimmed reads are written to `" << outfile << "`." << endl; 
+    cerr << "A total of " << tooShorts << " too short (trimmed length < "
+         << opts.minimum_length << ") reads removed" << endl;
+    cerr << "Trimmed reads are written to `" << outfile << "`." << endl;
     cerr << "Loading " << seqCount << " sequences took " << SEQAN_PROTIMEDIFF(loadTime)
          << " seconds." << endl << endl;
 
-	return 0;
+    return 0;
 }
 
