@@ -39,10 +39,12 @@ struct Options
 };
 
 Options DEFAULTS = {15, 2, 20, 15, 64}, opts;
+const int SangerOffset = 33;
+const int IlluminaOffset = 64;
 
 int qualityTrim(CharString &seq, CharString &qual,
                 unsigned &trimStart, unsigned &trimEnd,
-                int offset, int cutoff)
+                int deduction)
 {
     /* Maximum subarray problem, described in wiki
      * using Kadane's algorithm
@@ -61,7 +63,7 @@ int qualityTrim(CharString &seq, CharString &qual,
 
     for (unsigned j = 0; j < seqlen; j++)
     {
-        qv = (int)(ordValue(qual[j]) - offset - cutoff);
+        qv = (int)(ordValue(qual[j]) - deduction);
         currentMaxSum += qv;
 
         if (currentMaxSum > maxSum)
@@ -78,6 +80,14 @@ int qualityTrim(CharString &seq, CharString &qual,
     }
 
     return maxSum;
+}
+
+int toSangerQuality(CharString &qual, CharString &qualSanger, int offsetDiff)
+{
+    for (unsigned j = 0; j < length(qual); j++)
+        append(qualSanger, qual[j] + offsetDiff);
+
+    return 0;
 }
 
 int main (int argc, char const * argv[])
@@ -133,9 +143,10 @@ int main (int argc, char const * argv[])
     {
         outfile = infile;
         // replace the .suffix with .trimmed.fastq
-        int suffix_idx;
-        for (suffix_idx = length(infile)-1; suffix_idx >= 0; suffix_idx--)
+        unsigned suffix_idx;
+        for (suffix_idx = length(infile)-1; suffix_idx > 0; suffix_idx--)
             if (infile[suffix_idx] == '.') break;
+        if (suffix_idx==0) suffix_idx = length(outfile);
         suffix(outfile, suffix_idx) = ".trimmed.fastq";
     }
 
@@ -196,6 +207,8 @@ int main (int argc, char const * argv[])
     CharString seq;
     CharString qual;
     CharString id;
+    int deduction = opts.quality_encoding + opts.quality_cutoff;
+    int offsetDiff = SangerOffset - IlluminaOffset;
 
     for (unsigned i = 0; i < seqCount; i++)
     {
@@ -230,15 +243,12 @@ int main (int argc, char const * argv[])
             unsigned dbEnd = clippedEndPosition(row(ali, 0));
             cout << "Score = " << getScore(finder) << endl;
             cout << ali << endl;
-            cout << seq << endl;
-            cout << qual << endl << endl;
             */
         }
 
         unsigned trimStart = 0, trimEnd = 0;
         // results are [trimStart, trimEnd] (inclusive on ends)
-        qualityTrim(seq, qual, trimStart, trimEnd,
-                    opts.quality_encoding, opts.quality_cutoff);
+        qualityTrim(seq, qual, trimStart, trimEnd, deduction);
 
         if ((trimEnd - trimStart + 1) < (unsigned) opts.minimum_length)
         {
@@ -246,10 +256,13 @@ int main (int argc, char const * argv[])
             continue;
         }
 
+        CharString qualSanger;
+        toSangerQuality(qual, qualSanger, offsetDiff);
+
         fout << "@" << id << endl;
         fout << infix(seq, trimStart, trimEnd+1) << endl;
         fout << "+" << endl;
-        fout << infix(qual, trimStart, trimEnd+1) << endl;
+        fout << infix(qualSanger, trimStart, trimEnd+1) << endl;
     }
 
     fout.close();
