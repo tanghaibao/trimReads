@@ -98,6 +98,10 @@ int main (int argc, char const * argv[])
                                    "Output file name, uses Sanger encoding for quality. "
                                    "(default replace suffix with .trimmed.fastq)", 
                                    OptionType::String));
+    addOption(p, CommandLineOption('f', "adapterfile",
+                                   "FASTA formatted file containing the adapters for removal "
+                                   "[Default: adapters.fasta]",
+                                   OptionType::String, "adapters.fasta"));
     addOption(p, CommandLineOption('s', "score",
                                    "Minimum score to call adapter match. "
                                    "Default scoring scheme for +1 match, "
@@ -135,7 +139,7 @@ int main (int argc, char const * argv[])
     }
 
     CharString infile = args[0];
-    CharString outfile;
+    CharString outfile, adapterfile;
     if (isSetLong(p, "outfile"))
     {
         getOptionValueLong(p, "outfile", outfile);
@@ -154,6 +158,7 @@ int main (int argc, char const * argv[])
     ofstream fout(toCString(outfile));
 
     opts = DEFAULTS;
+    getOptionValueLong(p, "adapterfile", adapterfile);
     getOptionValueLong(p, "score", opts.score);
     getOptionValueLong(p, "times", opts.times);
     getOptionValueLong(p, "quality-cutoff", opts.quality_cutoff);
@@ -173,12 +178,19 @@ int main (int argc, char const * argv[])
     unsigned tooShorts = 0;
 
     // Adapter library, default is Illumina PE library adapters
-    // TODO: accept a FASTA file of adapters
-    StringSet<CharString> adapters;
-    appendValue(adapters, "AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT");
-    appendValue(adapters, "CAAGCAGAAGACGGCATACGAGATCGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT");
-    appendValue(adapters, "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT");
-    appendValue(adapters, "AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAGACCGATCTCGTATGCCGTCTTCTGCTTG");
+    StringSet<CharString> adapterNames, adapters;
+    CharString name, seq;
+
+    fstream f(toCString(adapterfile));
+    while ( ! f.eof() )
+    {
+        readMeta(f, name, Fasta());
+        if ( name=="" ) break;
+        appendValue(adapterNames, name);
+        read(f, seq, Fasta());
+        appendValue(adapters, seq);
+    }
+
     unsigned nadapters = length(adapters);
 
     String<unsigned> startpos(nadapters); // keep track of adapter positions in concat string
@@ -205,7 +217,7 @@ int main (int argc, char const * argv[])
     resize(rows(ali), 2);
     assignSource(row(ali, 0), adapterdb);
 
-    CharString seq;
+    //CharString seq;
     CharString qual;
     CharString id;
     int deduction = opts.quality_encoding + opts.quality_cutoff;
@@ -270,7 +282,7 @@ int main (int argc, char const * argv[])
 
     for (unsigned i = 0; i < nadapters; i++)
     {
-        cerr << "[" << i <<"] " << adapters[i] << " found "
+        cerr << "[" << i <<"] " << adapterNames[i] << " found "
              << adapterCounts[i] << " times" << endl;
     }
 
