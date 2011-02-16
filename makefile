@@ -13,5 +13,7 @@ CPPFLAGS += -O3
 CPPFLAGS += -W -Wall -pedantic -Wno-variadic-macros
 
 all: $(basename $(wildcard *.cc))
+test: trimReads
+	$< test.fastq
 clean:
 	rm -f $(basename $(wildcard *.cc))

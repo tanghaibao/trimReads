@@ -100,7 +100,7 @@ int main (int argc, char const * argv[])
                                    OptionType::String));
     addOption(p, CommandLineOption('f', "adapterfile",
                                    "FASTA formatted file containing the adapters for removal "
-                                   "[Default: adapters.fasta]",
+                                   "[default: `adapters.fasta`]",
                                    OptionType::String, "adapters.fasta"));
     addOption(p, CommandLineOption('s', "score",
                                    "Minimum score to call adapter match. "
@@ -155,8 +155,6 @@ int main (int argc, char const * argv[])
         suffix(outfile, suffix_idx) = ".trimmed.fastq";
     }
 
-    ofstream fout(toCString(outfile));
-
     opts = DEFAULTS;
     getOptionValueLong(p, "adapterfile", adapterfile);
     getOptionValueLong(p, "score", opts.score);
@@ -165,33 +163,32 @@ int main (int argc, char const * argv[])
     getOptionValueLong(p, "minimum-length", opts.minimum_length);
     getOptionValueLong(p, "quality-encoding", opts.quality_encoding);
 
-    MultiSeqFile multiSeqFile;
-    if (argc < 2 || !open(multiSeqFile.concat, toCString(infile), OPEN_RDONLY))
+    MultiSeqFile multiSeqFile, adapterFile;
+    if (argc < 2 || !open(multiSeqFile.concat, toCString(infile), OPEN_RDONLY) 
+                 || !open(adapterFile.concat, toCString(adapterfile), OPEN_RDONLY))
         return 1;
 
-    // Guess the format of the input, although currently only fastq is supported
     AutoSeqFormat format;
+    // Guess the format of the input, although currently only fastq is supported
     guessFormat(multiSeqFile.concat, format);
     split(multiSeqFile, format);
+    split(adapterFile, Fasta());
 
     unsigned seqCount = length(multiSeqFile);
+    unsigned nadapters = length(adapterFile);
     unsigned tooShorts = 0;
 
-    // Adapter library, default is Illumina PE library adapters
+    // Adapter library
     StringSet<CharString> adapterNames, adapters;
-    CharString name, seq;
+    CharString id, seq;
 
-    fstream f(toCString(adapterfile));
-    while ( ! f.eof() )
+    for (unsigned i = 0; i < nadapters; i++)
     {
-        readMeta(f, name, Fasta());
-        if ( name=="" ) break;
-        appendValue(adapterNames, name);
-        read(f, seq, Fasta());
+        assignSeqId(id, adapterFile[i], Fasta());   // read sequence id
+        assignSeq(seq, adapterFile[i], Fasta());    // read sequence
+        appendValue(adapterNames, id);
         appendValue(adapters, seq);
     }
-
-    unsigned nadapters = length(adapters);
 
     String<unsigned> startpos(nadapters); // keep track of adapter positions in concat string
     String<unsigned> adapterCounts(nadapters); // keep track of adapter counts
@@ -217,11 +214,11 @@ int main (int argc, char const * argv[])
     resize(rows(ali), 2);
     assignSource(row(ali, 0), adapterdb);
 
-    //CharString seq;
     CharString qual;
-    CharString id;
     int deduction = opts.quality_encoding + opts.quality_cutoff;
     int offsetDiff = SangerOffset - opts.quality_encoding;
+
+    ofstream fout(toCString(outfile));
 
     for (unsigned i = 0; i < seqCount; i++)
     {
