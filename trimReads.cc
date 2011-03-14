@@ -38,7 +38,7 @@ struct Options
     int quality_encoding;
 };
 
-Options DEFAULTS = {15, 4, 20, 15, 64}, opts;
+Options DEFAULTS = {15, 4, 20, 64, 64}, opts;
 const int SangerOffset = 33;
 const int IlluminaOffset = 64;
 
