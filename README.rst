@@ -60,7 +60,7 @@ to see a list of program options::
       -m, --minimum-length    Discard trimmed reads that are shorter than LENGTH. (default 64)
       -Q, --quality-encoding  Read quality encoding for input file. 64 for Illumina, 33 for Sanger. Output will always be Sanger encoding. (default 64)
 
-Find a list of adapters to remove (more will slow down search), default is `adapters.fasta`. When ready::
+Find a list of adapters to remove (more will slow down search), default is ``adapters.fasta``. When ready::
 
     trimReads test.fastq
 

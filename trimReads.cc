@@ -38,9 +38,10 @@ struct Options
     int quality_encoding;
 };
 
-Options DEFAULTS = {15, 4, 20, 64, 64}, opts;
 const int SangerOffset = 33;
 const int IlluminaOffset = 64;
+// score, times, quality_cutoff, minimum_length, quality_encoding
+Options DEFAULTS = {15, 4, 20, 64, IlluminaOffset}, opts;
 
 int qualityTrim(CharString &seq, CharString &qual,
                 unsigned &trimStart, unsigned &trimEnd,
@@ -99,8 +100,7 @@ int main (int argc, char const * argv[])
                                    "(default replace suffix with .trimmed.fastq)", 
                                    OptionType::String));
     addOption(p, CommandLineOption('f', "adapterfile",
-                                   "FASTA formatted file containing the adapters for removal "
-                                   "[default: `adapters.fasta`]",
+                                   "FASTA formatted file containing the adapters for removal ",
                                    OptionType::String, "adapters.fasta"));
     addOption(p, CommandLineOption('s', "score",
                                    "Minimum score to call adapter match. "
@@ -114,14 +114,15 @@ int main (int argc, char const * argv[])
     addOption(p, CommandLineOption('q', "quality-cutoff",
                                    "Trim low-quality regions below quality cutoff. "
                                    "The algorithm is similar to the one used by BWA "
-                                   "by finding a max-sum segment within the quality string.",
+                                   "by finding a max-sum segment within the quality string. "
+                                   "Set it to 0 to skip quality trimming. ",
                                    OptionType::Int, DEFAULTS.quality_cutoff));
     addOption(p, CommandLineOption('m', "minimum-length",
                                    "Discard trimmed reads that are shorter than LENGTH.",
                                    OptionType::Int, DEFAULTS.minimum_length));
     addOption(p, CommandLineOption('Q', "quality-encoding",
                                    "Read quality encoding for input file. 64 for Illumina, "
-                                   "33 for Sanger. Output will always be Sanger encoding.",
+                                   "33 for Sanger. ",
                                    OptionType::Int, DEFAULTS.quality_encoding));
 
     addTitleLine(p, "Illumina reads trimming utility");
@@ -216,7 +217,6 @@ int main (int argc, char const * argv[])
 
     CharString qual;
     int deduction = opts.quality_encoding + opts.quality_cutoff;
-    int offsetDiff = SangerOffset - opts.quality_encoding;
 
     ofstream fout(toCString(outfile));
 
@@ -236,7 +236,7 @@ int main (int argc, char const * argv[])
             unsigned clipEnd = clippedEndPosition(row(ali, 1));
 
             for (unsigned j = clipStart; j < clipEnd; j++)
-                qual[j] = (char) (2 + opts.quality_encoding);
+                qual[j] = (char) (1 + opts.quality_encoding);
 
             // find out which adapters generated the alignment
             unsigned dbStart = clippedBeginPosition(row(ali, 0));
@@ -256,23 +256,29 @@ int main (int argc, char const * argv[])
             */
         }
 
-        unsigned trimStart = 0, trimEnd = 0;
+        unsigned trimStart = 0, trimEnd = length(seq) - 1;
         // results are [trimStart, trimEnd] (inclusive on ends)
-        qualityTrim(seq, qual, trimStart, trimEnd, deduction);
-
-        if ((trimEnd - trimStart + 1) < (unsigned) opts.minimum_length)
+        if (opts.quality_cutoff > 0)
         {
-            tooShorts++;
-            continue;
+            qualityTrim(seq, qual, trimStart, trimEnd, deduction);
+
+            if ((trimEnd - trimStart + 1) < (unsigned) opts.minimum_length)
+            {
+                tooShorts++;
+                continue;
+            }
         }
 
+        /*
         CharString qualSanger;
+        int offsetDiff = SangerOffset - opts.quality_encoding;
         toSangerQuality(qual, qualSanger, offsetDiff);
+        */
 
         fout << "@" << id << endl;
         fout << infix(seq, trimStart, trimEnd+1) << endl;
         fout << "+" << endl;
-        fout << infix(qualSanger, trimStart, trimEnd+1) << endl;
+        fout << infix(qual, trimStart, trimEnd+1) << endl;
     }
 
     fout.close();
