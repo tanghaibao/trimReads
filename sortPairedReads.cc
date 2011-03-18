@@ -129,7 +129,7 @@ int main (int argc, char const * argv[])
     CommandLineParser p("sortPairedReads");
     addOption(p, CommandLineOption('f', "adapterfile",
                                    "FASTA formatted file containing the adapters for removal ",
-                                   OptionType::String, "adapters2.fasta"));
+                                   OptionType::String, "adapters.fasta"));
     addOption(p, CommandLineOption('s', "adapterMatchScore",
                                    "Minimum score to call adapter match. "
                                    "Default scoring scheme for +1 match, "
@@ -172,7 +172,7 @@ int main (int argc, char const * argv[])
 
     CharString outSuffix = ".clean.fastq";
     CharString hasadaptersSuffix = ".adapters.fastq";
-    CharString fragSuffix = ".fragments.fastq";
+    CharString fragSuffix = ".overlap.fastq";
 
     replaceSuffix(infile1, outfile1, outSuffix);
     replaceSuffix(infile2, outfile2, outSuffix);
