@@ -86,12 +86,16 @@ bool alignReads(CharString &id1, Dna5String &seq1, CharString &id2, Dna5String s
 bool alignAdapters(CharString &id, Dna5String &seq, CharString &qual,
         Align<Dna5String> ali, Score<int> &scoring, int adapterMatchScore,
         String<unsigned> &adapterCounts, String<unsigned> &startpos, 
-        int quality_encoding, bool verbose)
+        int quality_encoding, unsigned nadapters, bool verbose)
 {
     assignSource(row(ali, 1), seq);
+    LocalAlignmentFinder<> finder(ali);
 
-    int score = localAlignment(ali, scoring, SmithWaterman()); 
-    if (score < adapterMatchScore) return false;
+    //int score = localAlignment(ali, scoring, WatermanEggert()); 
+    int score = localAlignment(ali, finder, scoring, adapterMatchScore);
+    if (score == 0) return false;
+
+    score = getScore(finder);
 
     if (verbose)
     {
@@ -107,12 +111,12 @@ bool alignAdapters(CharString &id, Dna5String &seq, CharString &qual,
 
     // find out which adapters generated the alignment
     unsigned dbStart = clippedBeginPosition(row(ali, 0));
-    unsigned nadapters = length(startpos);
     unsigned idx;
     for (idx = 0; idx < nadapters; idx++)
     {
         if (startpos[idx] > dbStart) break;
     }
+    //cerr << dbStart << " " << startpos[idx] << " " << idx << endl; 
     idx--; // bisect startpos
     adapterCounts[idx]++;
 
@@ -202,7 +206,8 @@ int main (int argc, char const * argv[])
     unsigned nadapters = length(adapterFile);
 
     // Adapter library
-    StringSet<Dna5String> adapterNames, adapters;
+    StringSet<CharString> adapterNames;
+    StringSet<Dna5String> adapters;
     CharString id;
     Dna5String seq;
 
@@ -260,12 +265,12 @@ int main (int argc, char const * argv[])
         bool r1hasAdapter = alignAdapters(id1, seq1, qual1, 
                 ali, scoring, opts.adapterMatchScore, 
                 adapterCounts, startpos,
-                opts.quality_encoding, opts.verbose);
+                opts.quality_encoding, nadapters, opts.verbose);
 
         bool r2hasAdapter = alignAdapters(id2, seq2, qual2, 
                 ali, scoring, opts.adapterMatchScore, 
                 adapterCounts, startpos,
-                opts.quality_encoding, opts.verbose);
+                opts.quality_encoding, nadapters, opts.verbose);
 
         
         if (r1hasAdapter || r2hasAdapter)
