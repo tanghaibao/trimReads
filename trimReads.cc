@@ -8,14 +8,13 @@
  * Trim given adapters by using local alignments, up to N times to deal
  * with chimeric adapters; poly-ACGT tails can also be removed if asked.
  *
- * Trimmed regions will be given low phred quality (2) and then perform a
+ * Trimmed regions will be given low phred quality (1) and then perform a
  * quality trim. The algorithm for quality trim is similar to bwa quality trim.
  * All quality values will deduct a CUTOFF value (specified by the user) and
  * the max sum segment within the quality string will then be used as the final
  * `trimmed` region.
  *
- * Input is a fastq file, output is a trimmed fastq file with Sanger encoding of
- * quality values.
+ * Input is a fastq file, output is a trimmed fastq file.
  */
 
 #define SEQAN_PROFILE // enable time measurements
