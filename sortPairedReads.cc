@@ -1,11 +1,17 @@
 /*
- * Trim artificial base pairs within fastq reads.
+ * Sort Illumina read pairs into adapter set, overlap set and clean set.
  *
  * Author: Haibao Tang <htang@jcvi.org>
  * Date: 01/30/2011
  * License: BSD
  *
- * Input is a pair of fastq file, output is a pair of trimmed fastq file
+ * Input is a pair of fastq file, output is three sets of files:
+ *
+ * - Set 1: Adapter set (.adapters.fastq) contain read pairs where either /1 or
+ *   /2 matches to given adapter.
+ * - Set 2: Overlap set (.overlap.fastq) contain read pairs where /1 and /2 has
+ *   dovetail overlap.
+ * - Set 3: Surviving pairs (.clean.fastq).
  * 
  * This routine will detect the pairs of reads that contain adapters and throw
  * away both ends. Also detect the pairs of reads that have dovetail alignments
@@ -43,7 +49,7 @@ Options DEFAULTS = {15, 20, IlluminaOffset, false}, opts;
 
 void replaceSuffix(CharString &infile, CharString &outfile, CharString &newSuffix)
 {
-    // replace the .suffix with .clean.fastq
+    // replace the suffix of infile
     outfile = infile;
     unsigned suffix_idx;
     for (suffix_idx = length(infile)-1; suffix_idx > 0; suffix_idx--)
@@ -58,6 +64,7 @@ void writeFastQ(ofstream &fout, CharString &id, Dna5String &seq, CharString &qua
     fout << "+" << endl << qual << endl;
 }
 
+// Dovetail alignment (or end-to-end alignment) between two read sequences
 bool alignReads(CharString &id1, Dna5String &seq1, CharString &id2, Dna5String seq2, 
         Score<int>& scoring, int endMatchScore, bool verbose)
 {
@@ -83,6 +90,8 @@ bool alignReads(CharString &id1, Dna5String &seq1, CharString &id2, Dna5String s
     return true;
 }
 
+// Adapters are called through Local alignment between the adapter database and
+// the read sequence
 bool alignAdapters(CharString &id, Dna5String &seq, CharString &qual,
         Align<Dna5String> ali, Score<int> &scoring, int adapterMatchScore,
         String<unsigned> &adapterCounts, String<unsigned> &startpos, 
@@ -272,7 +281,9 @@ int main (int argc, char const * argv[])
                 adapterCounts, startpos,
                 opts.quality_encoding, nadapters, opts.verbose);
 
-        
+        // Here is the sorting logic, first check existence of adapters
+        // then check the /1 and /2 read overlap
+        //
         if (r1hasAdapter || r2hasAdapter)
         {
             writeFastQ(fouta, id1, seq1, qual1);
@@ -300,15 +311,14 @@ int main (int argc, char const * argv[])
     fouta.close();
     foutf.close();
 
+    // Report the adapter matches
     for (unsigned i = 0; i < nadapters; i++)
     {
         cerr << "[" << i <<"] " << adapterNames[i] << " found "
              << adapterCounts[i] << " times" << endl;
     }
 
-    // Write a report of the trimming
     cerr << endl;
-    cerr << "Trimmed reads are written to `" << outfile1 << "`." << endl;
     cerr << "Loading " << seqCount << " sequences took " << SEQAN_PROTIMEDIFF(loadTime)
          << " seconds." << endl << endl;
 
