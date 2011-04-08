@@ -72,9 +72,9 @@ sortPairedReads
 This program sorts all read pairs into three sets:
 
 * Adapter set: the pairs with either /1 or /2 match adapters (in most cases
-both will match). These are fragments up to 1X read length.
+  both will match). These are fragments up to 1X read length.
 * Overlap set: the pairs with /1 and /2 having dovetail overlap. These are
-fragments up to 2X read length.
+  fragments up to 2X read length.
 * Clean set: survived the above two searches.
 
 The reason for this sorting is to get rid of the short fragments (set 1 and set

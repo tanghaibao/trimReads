@@ -35,12 +35,14 @@ struct Options
     int quality_cutoff;
     int minimum_length;
     int quality_encoding;
+    bool discard_adapter_reads;
 };
 
 const int SangerOffset = 33;
 const int IlluminaOffset = 64;
-// score, times, quality_cutoff, minimum_length, quality_encoding
-Options DEFAULTS = {15, 4, 20, 64, IlluminaOffset}, opts;
+// score, times, quality_cutoff, minimum_length, quality_encoding,
+// discard_adapter_reads
+Options DEFAULTS = {15, 4, 20, 30, IlluminaOffset, false}, opts;
 
 int qualityTrim(CharString &seq, CharString &qual,
                 unsigned &trimStart, unsigned &trimEnd,
@@ -123,6 +125,9 @@ int main (int argc, char const * argv[])
                                    "Read quality encoding for input file. 64 for Illumina, "
                                    "33 for Sanger. ",
                                    OptionType::Int, DEFAULTS.quality_encoding));
+    addOption(p, CommandLineOption('d', "discard-adapter-reads",
+                                   "Discard reads with adapter sequences rather than trim",
+                                   OptionType::Bool, DEFAULTS.discard_adapter_reads));
 
     addTitleLine(p, "Illumina reads trimming utility");
     addTitleLine(p, "Author: Haibao Tang <htang@jcvi.org>");
@@ -162,6 +167,7 @@ int main (int argc, char const * argv[])
     getOptionValueLong(p, "quality-cutoff", opts.quality_cutoff);
     getOptionValueLong(p, "minimum-length", opts.minimum_length);
     getOptionValueLong(p, "quality-encoding", opts.quality_encoding);
+    if (isSetShort(p, 'd')) opts.discard_adapter_reads = true;
 
     MultiSeqFile multiSeqFile, adapterFile;
     if (argc < 2 || !open(multiSeqFile.concat, toCString(infile), OPEN_RDONLY) 
@@ -218,6 +224,7 @@ int main (int argc, char const * argv[])
     int deduction = opts.quality_encoding + opts.quality_cutoff;
 
     ofstream fout(toCString(outfile));
+    unsigned int trimmed_reads = 0, discarded_adapter_reads = 0;
 
     for (unsigned i = 0; i < seqCount; i++)
     {
@@ -228,6 +235,7 @@ int main (int argc, char const * argv[])
         assignSource(row(ali, 1), seq);
         LocalAlignmentFinder<> finder(ali);
         int count = 0;
+        bool containAdapters = false;
         while (localAlignment(ali, finder, scoring, opts.score, WatermanEggert()) \
                 && count < opts.times)
         {
@@ -235,6 +243,7 @@ int main (int argc, char const * argv[])
             unsigned clipEnd = clippedEndPosition(row(ali, 1));
 
             for (unsigned j = clipStart; j < clipEnd; j++)
+                // mark the adapter region with qual of 1
                 qual[j] = (char) (1 + opts.quality_encoding);
 
             // find out which adapters generated the alignment
@@ -247,6 +256,7 @@ int main (int argc, char const * argv[])
             idx--; // bisect startpos
             adapterCounts[idx]++;
             count++;
+            containAdapters = true;
 
             /*
             unsigned dbEnd = clippedEndPosition(row(ali, 0));
@@ -273,11 +283,18 @@ int main (int argc, char const * argv[])
         int offsetDiff = SangerOffset - opts.quality_encoding;
         toSangerQuality(qual, qualSanger, offsetDiff);
         */
+        
+        if (opts.discard_adapter_reads && containAdapters) 
+        {
+            discarded_adapter_reads++;
+            continue;
+        }
 
         fout << "@" << id << endl;
         fout << infix(seq, trimStart, trimEnd+1) << endl;
         fout << "+" << endl;
         fout << infix(qual, trimStart, trimEnd+1) << endl;
+        trimmed_reads++;
     }
 
     fout.close();
@@ -291,9 +308,15 @@ int main (int argc, char const * argv[])
     // Write a report of the trimming
     cerr << endl;
     cerr << "A total of " << tooShorts << " too short (trimmed length < "
-         << opts.minimum_length << ") reads removed" << endl;
-    cerr << "Trimmed reads are written to `" << outfile << "`." << endl;
-    cerr << "Loading " << seqCount << " sequences took " << SEQAN_PROTIMEDIFF(loadTime)
+         << opts.minimum_length << ") reads removed." << endl;
+    if (opts.discard_adapter_reads)
+    {
+        cerr << "A total of " << discarded_adapter_reads 
+             << " adapter reads discarded." << endl;
+    }
+    cerr << "A total of " << trimmed_reads << " trimmed reads are written to `" 
+         << outfile << "`." << endl;
+    cerr << "Processed " << seqCount << " sequences took " << SEQAN_PROTIMEDIFF(loadTime)
          << " seconds." << endl << endl;
 
     return 0;

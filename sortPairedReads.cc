@@ -319,7 +319,7 @@ int main (int argc, char const * argv[])
     }
 
     cerr << endl;
-    cerr << "Loading " << seqCount << " sequences took " << SEQAN_PROTIMEDIFF(loadTime)
+    cerr << "Processed " << seqCount << " sequences took " << SEQAN_PROTIMEDIFF(loadTime)
          << " seconds." << endl << endl;
 
     return 0;
