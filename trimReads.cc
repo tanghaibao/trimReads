@@ -65,7 +65,13 @@ int qualityTrim(CharString &seq, CharString &qual,
 
     for (unsigned j = 0; j < seqlen; j++)
     {
+        // Here we deduct user specified cutoff
         qv = (int)(ordValue(qual[j]) - deduction);
+        // Any base with qv higher than cutoff get +1 score, and any base with
+        // qv lower than cutoff get -1 score. The target is to get a max-sum
+        // segment for the 'modified' score array.
+        qv = (qv > 0) - (qv < 0);
+
         currentMaxSum += qv;
 
         if (currentMaxSum > maxSum)
@@ -97,7 +103,7 @@ int main (int argc, char const * argv[])
     SEQAN_PROTIMESTART(loadTime);
     CommandLineParser p("trimReads");
     addOption(p, CommandLineOption('o', "outfile",
-                                   "Output file name, uses Sanger encoding for quality. "
+                                   "Output file name. "
                                    "(default replace suffix with .trimmed.fastq)", 
                                    OptionType::String));
     addOption(p, CommandLineOption('f', "adapterfile",
@@ -204,7 +210,7 @@ int main (int argc, char const * argv[])
     startpos[0] = pos;
     CharString adapterdb = adapters[0];
 
-    CharString Ns = "NNNNN"; // use N's to break alignments across adapters
+    CharString Ns = "XXXXX"; // use X's to break alignments across adapters
     for (unsigned i = 1; i < nadapters; i++)
     {
         append(adapterdb, Ns);

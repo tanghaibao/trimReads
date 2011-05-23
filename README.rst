@@ -49,14 +49,15 @@ to see a list of program options::
 
     Usage: trimReads [options] fastqfile
 
-      -h, --help              displays this help message
-      -o, --outfile           Output file name, uses Sanger encoding for quality. (default replace suffix with .trimmed.fastq)
-      -f, --adapterfile       FASTA formatted file containing the adapters for removal  (default adapters.fasta)
-      -s, --score             Minimum score to call adapter match. Default scoring scheme for +1 match, -3 for mismatch/gapOpen/gapExtension. (default 15)
-      -n, --times             Try to remove the adapters at most COUNT times. Useful when an adapter gets appended multiple times. (default 4)
-      -q, --quality-cutoff    Trim low-quality regions below quality cutoff. The algorithm is similar to the one used by BWA by finding a max-sum segment within the quality string. Set it to 0 to skip quality trimming.  (default 20)
-      -m, --minimum-length    Discard trimmed reads that are shorter than LENGTH. (default 64)
-      -Q, --quality-encoding  Read quality encoding for input file. 64 for Illumina, 33 for Sanger.  (default 64)
+      -h, --help                   displays this help message
+      -o, --outfile                Output file name. (default replace suffix with .trimmed.fastq)
+      -f, --adapterfile            FASTA formatted file containing the adapters for removal  (default adapters.fasta)
+      -s, --score                  Minimum score to call adapter match. Default scoring scheme for +1 match, -3 for mismatch/gapOpen/gapExtension. (default 15)
+      -n, --times                  Try to remove the adapters at most COUNT times. Useful when an adapter gets appended multiple times. (default 4)
+      -q, --quality-cutoff         Trim low-quality regions below quality cutoff. The algorithm is similar to the one used by BWA by finding a max-sum segment within the quality string. Set it to 0 to skip quality trimming.  (default 20)
+      -m, --minimum-length         Discard trimmed reads that are shorter than LENGTH. (default 30)
+      -Q, --quality-encoding       Read quality encoding for input file. 64 for Illumina, 33 for Sanger.  (default 64)
+      -d, --discard-adapter-reads  Discard reads with adapter sequences rather than trim (default 0)
 
 Find a list of adapters to remove (more will slow down search), default is ``adapters.fasta``. When ready::
 
