@@ -5,6 +5,7 @@ This contains several utility programs that removes the adapters and low quality
 Illumina reads. 
 
 :Author: Haibao Tang (`tanghaibao <http://github.com/tanghaibao>`_)
+:Contributor: Tristan Lefebure
 :Email: htang@jcvi.org
 :License: `BSD <http://creativecommons.org/licenses/BSD/>`_
 
@@ -64,6 +65,15 @@ Find a list of adapters to remove (more will slow down search), default is ``ada
 to get a trimmed file `test.trimmed.fastq`. To turn off the quality trimming, just set ``-q`` to ``0``::
 
     trimReads -q 0 test.fastq
+
+The detected adapter stretch will have quality values of ``AAAAAAAAAAA...``.
+This will help you verify that the sequence masked is indeed adapters. For
+example::
+
+    @SNPSTER4:7:1:2:458#0/1 run=090205_SNPSTER4_0273_30GAUAAXX_PE
+    ATTGAAGTGTTTGGGGTTCAAACACCGACAGATCGGAAGAGCGGTTCAGCAGGAAAGCCGAGACACACATCGGTATCCGCTTTTTTTTTT
+    +
+    aba`aaa]a`aaaaaa]a_aa\aa`aa_^AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBBBBBBBBBBB
 
 
 sortPairedReads
