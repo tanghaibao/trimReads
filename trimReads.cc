@@ -5,11 +5,10 @@
  * Date: 01/30/2011
  * License: BSD
  *
- * Trim given adapters by using local alignments, up to N times to deal
- * with chimeric adapters; poly-ACGT tails can also be removed if asked.
+ * Trim given adapters using local alignments. Trimmed regions will be given
+ * low phred quality (1) and then perform quality trim if asked (use -q 0 to
+ * turn off).
  *
- * Trimmed regions will be given low phred quality (1) and then perform a
- * quality trim. The algorithm for quality trim is similar to bwa quality trim.
  * All quality values will deduct a CUTOFF value (specified by the user) and
  * the max sum segment within the quality string will then be used as the final
  * `trimmed` region.
@@ -114,10 +113,6 @@ int main (int argc, char const * argv[])
                                    "Default scoring scheme for +1 match, "
                                    "-3 for mismatch/gapOpen/gapExtension.",
                                    OptionType::Int, DEFAULTS.score));
-    addOption(p, CommandLineOption('n', "times",
-                                   "Try to remove the adapters at most COUNT times. "
-                                   "Useful when an adapter gets appended multiple times.",
-                                   OptionType::Int, DEFAULTS.times));
     addOption(p, CommandLineOption('q', "quality-cutoff",
                                    "Trim low-quality regions below quality cutoff. "
                                    "The algorithm is similar to the one used by BWA "
@@ -169,7 +164,6 @@ int main (int argc, char const * argv[])
     opts = DEFAULTS;
     getOptionValueLong(p, "adapterfile", adapterfile);
     getOptionValueLong(p, "score", opts.score);
-    getOptionValueLong(p, "times", opts.times);
     getOptionValueLong(p, "quality-cutoff", opts.quality_cutoff);
     getOptionValueLong(p, "minimum-length", opts.minimum_length);
     getOptionValueLong(p, "quality-encoding", opts.quality_encoding);
@@ -224,7 +218,6 @@ int main (int argc, char const * argv[])
     Score<int> scoring(1, -3, -3, -3); // harsh penalty for mismatch and indel
     Align<CharString > ali;
     resize(rows(ali), 2);
-    assignSource(row(ali, 0), adapterdb);
 
     CharString qual;
     int deduction = opts.quality_encoding + opts.quality_cutoff;
@@ -238,15 +231,19 @@ int main (int argc, char const * argv[])
         assignSeq(seq, multiSeqFile[i], format);    // read sequence
         assignQual(qual, multiSeqFile[i], format);  // read ascii quality values
 
+        assignSource(row(ali, 0), adapterdb);
         assignSource(row(ali, 1), seq);
-        LocalAlignmentFinder<> finder(ali);
-        int count = 0;
-        bool containAdapters = false;
-        while (localAlignment(ali, finder, scoring, opts.score, WatermanEggert()) \
-                && count < opts.times)
+
+        int score = localAlignment(ali, scoring, SmithWaterman());
+        bool containAdapters = (score >= opts.score);
+
+        if (containAdapters)
         {
             unsigned clipStart = clippedBeginPosition(row(ali, 1));
             unsigned clipEnd = clippedEndPosition(row(ali, 1));
+
+            //cout << "Score = " << score << endl;
+            //cout << ali << endl;
 
             for (unsigned j = clipStart; j < clipEnd; j++)
                 // mark the adapter region with qual of 1
@@ -261,14 +258,6 @@ int main (int argc, char const * argv[])
             }
             idx--; // bisect startpos
             adapterCounts[idx]++;
-            count++;
-            containAdapters = true;
-
-            /*
-            unsigned dbEnd = clippedEndPosition(row(ali, 0));
-            cout << "Score = " << getScore(finder) << endl;
-            cout << ali << endl;
-            */
         }
 
         unsigned trimStart = 0, trimEnd = length(seq) - 1;
@@ -284,12 +273,6 @@ int main (int argc, char const * argv[])
             }
         }
 
-        /*
-        CharString qualSanger;
-        int offsetDiff = SangerOffset - opts.quality_encoding;
-        toSangerQuality(qual, qualSanger, offsetDiff);
-        */
-        
         if (opts.discard_adapter_reads && containAdapters) 
         {
             discarded_adapter_reads++;
