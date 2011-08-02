@@ -41,11 +41,12 @@ struct Options
     int endMatchScore;
     int quality_encoding;
     bool verbose;
+    bool nooverlap;
 };
 
 const int SangerOffset = 33;
 const int IlluminaOffset = 64;
-Options DEFAULTS = {15, 20, IlluminaOffset, false}, opts;
+Options DEFAULTS = {15, 20, IlluminaOffset, false, false}, opts;
 
 void replaceSuffix(CharString &infile, CharString &outfile, CharString &newSuffix)
 {
@@ -136,6 +137,10 @@ int main (int argc, char const * argv[])
 {
     SEQAN_PROTIMESTART(loadTime);
     CommandLineParser p("sortPairedReads");
+    addOption(p, CommandLineOption('O', "nooverlap",
+                                   "Turn off overlapping reads detection, "
+                                   "and do not create .overlap.fastq file.",
+                                   OptionType::Bool, DEFAULTS.nooverlap));
     addOption(p, CommandLineOption('f', "adapterfile",
                                    "FASTA formatted file containing the adapters for removal ",
                                    OptionType::String, "adapters.fasta"));
@@ -194,6 +199,7 @@ int main (int argc, char const * argv[])
     getOptionValueLong(p, "endMatchScore", opts.endMatchScore);
 
     if (isSetShort(p, 'v')) opts.verbose = true;
+    if (isSetShort(p, 'O')) opts.nooverlap = true;
 
     MultiSeqFile multiSeqFile1, multiSeqFile2, adapterFile;
     if (argc < 2 || !open(multiSeqFile1.concat, toCString(infile1), OPEN_RDONLY) 
@@ -259,7 +265,9 @@ int main (int argc, char const * argv[])
     ofstream fout1(toCString(outfile1));
     ofstream fout2(toCString(outfile2));
     ofstream fouta(toCString(hasadaptersfile));
-    ofstream foutf(toCString(fragfile));
+    ofstream foutf;
+    if (! opts.nooverlap)
+        foutf.open(toCString(fragfile));
 
     for (unsigned i = 0; i < seqCount; i++)
     {
@@ -271,7 +279,7 @@ int main (int argc, char const * argv[])
         assignSeq(seq2, multiSeqFile2[i], format);    // read sequence
         assignQual(qual2, multiSeqFile2[i], format);  // read ascii quality values
 
-        bool r1hasAdapter = alignAdapters(id1, seq1, qual1, 
+        bool r1hasAdapter = alignAdapters(id1, seq1, qual1,
                 ali, scoring, opts.adapterMatchScore, 
                 adapterCounts, startpos,
                 opts.quality_encoding, nadapters, opts.verbose);
@@ -291,10 +299,8 @@ int main (int argc, char const * argv[])
             continue;
         }
 
-        bool endAligned = alignReads(id1, seq1, id2, seq2, 
-                scoring, opts.endMatchScore, opts.verbose);
-
-        if (endAligned)
+        if ((! opts.nooverlap) && alignReads(id1, seq1, id2, seq2,
+                scoring, opts.endMatchScore, opts.verbose))
         {
             writeFastQ(foutf, id1, seq1, qual1);
             writeFastQ(foutf, id2, seq2, qual2);
@@ -305,11 +311,6 @@ int main (int argc, char const * argv[])
             writeFastQ(fout2, id2, seq2, qual2);
         }
     }
-
-    fout1.close();
-    fout2.close();
-    fouta.close();
-    foutf.close();
 
     // Report the adapter matches
     for (unsigned i = 0; i < nadapters; i++)

@@ -102,6 +102,7 @@ to see a list of program options::
     Usage: sortPairedReads [options] fastqfile1 fastqfile2
 
       -h, --help               displays this help message
+      -O, --nooverlap          Turn off overlapping reads detection, and do not create .overlap.fastq file. (default 0)
       -f, --adapterfile        FASTA formatted file containing the adapters for removal  (default adapters.fasta)
       -s, --adapterMatchScore  Minimum score to call adapter match. Default scoring scheme for +1 match, -3 for mismatch/gapOpen/gapExtension. (default 15)
       -t, --endMatchScore      Minimum score to call dovetail match. Default scoring scheme for +1 match, -3 for mismatch/gapOpen/gapExtension. (default 20)
@@ -113,3 +114,23 @@ For any given two fastq files, the output contains 4 files: ``fastqfile1.adapter
 ``fastqfile2.clean.fastq`` (set 3). For genome assembler inputs, I recommend
 discard set 1, treat set 2 as **unmated**, and treat set 3 as **mated**.
 
+For example::
+
+    $ sortPairedReads s1.fastq s2.fastq
+    [0] Illumina_PE-1 found 0 times
+    [1] Illumina_PE-2 found 0 times
+    [2] Illumina_PE-1rc found 54 times
+    [3] Illumina_PE-2rc found 83 times
+
+    Processed 2500 sequences took 3.33262 seconds.
+
+    $ ls *.*.fastq
+    s1.clean.fastq  s2.clean.fastq  s1.adapters.fastq  s1.overlap.fastq
+
+Turn ``-O`` on if you don't like ``.overlap.fastq``::
+
+    $ sortPairedReads s1.fastq s2.fastq -O
+    ...
+
+    $ ls *.*.fastq
+    s1.clean.fastq  s2.clean.fastq  s1.adapters.fastq
