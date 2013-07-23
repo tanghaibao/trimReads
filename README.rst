@@ -20,8 +20,9 @@ Please note that ``trimReads`` is no longer compatible with seqan-1.4+. For
 back-ward compatibility, a copy of older seqan is now included as ``seqan.tgz``.
 
 To install, run::
-    tar zxvf seqan.tgz
-    make
+
+    $ tar zxvf seqan.tgz
+    $ make
 
 
 trimReads
