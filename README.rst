@@ -2,7 +2,7 @@
 Illumina reads adapter screening utilities
 =================================================
 This contains several utility programs that removes the adapters and low quality bases from
-Illumina reads. 
+Illumina reads.
 
 :Author: Haibao Tang (`tanghaibao <http://github.com/tanghaibao>`_)
 :Contributor: Tristan Lefebure
@@ -14,8 +14,13 @@ Illumina reads.
 Installation
 -------------
 The program depends on the excellent `SeqAn library <http://www.seqan.de/>`_.
-Please download the library, and place ``seqan/`` in the same folder, and run::
+Please download the library, and place ``seqan/`` in the same folder.
 
+**Please note that ``trimReads`` is no longer compatible with seqan-1.4+. For
+back-ward compatibility, a copy of older seqan is now included as ``seqan.tgz``**.
+
+Run::
+    tar zxvf seqan.tgz
     make
 
 
@@ -27,7 +32,7 @@ implemented in `SeqAn <http://www.seqan.de/>`_. The quality trimming are a
 simple algorithm that takes the quality values, deduct a user specified cutoff,
 and then finds the `max-sum segment
 <http://en.wikipedia.org/wiki/Maximum_subarray_problem>`_. This method
-guarantees that the average base quality is higher than the user cutoff. 
+guarantees that the average base quality is higher than the user cutoff.
 
 There are other options to cut adapters, including `cutadapt
 <http://code.google.com/p/cutadapt/>`_ and `FASTX_TOOLKIT
@@ -108,7 +113,7 @@ to see a list of program options::
       -t, --endMatchScore      Minimum score to call dovetail match. Default scoring scheme for +1 match, -3 for mismatch/gapOpen/gapExtension. (default 20)
       -Q, --quality-encoding   Read quality encoding for input file. 64 for Illumina, 33 for Sanger.  (default 64)
       -v, --verbose            Print alignments for debugging  (default 0)
-     
+
 For any given two fastq files, the output contains 4 files: ``fastqfile1.adapters.fastq`` (set 1),
 ``fastqfile1.overlap.fastq`` (set 2), ``fastqfile1.clean.fastq`` and
 ``fastqfile2.clean.fastq`` (set 3). For genome assembler inputs, I recommend
