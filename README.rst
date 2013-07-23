@@ -16,10 +16,10 @@ Installation
 The program depends on the excellent `SeqAn library <http://www.seqan.de/>`_.
 Please download the library, and place ``seqan/`` in the same folder.
 
-**Please note that ``trimReads`` is no longer compatible with seqan-1.4+. For
-back-ward compatibility, a copy of older seqan is now included as ``seqan.tgz``**.
+Please note that ``trimReads`` is no longer compatible with seqan-1.4+. For
+back-ward compatibility, a copy of older seqan is now included as ``seqan.tgz``.
 
-Run::
+To install, run::
     tar zxvf seqan.tgz
     make
 
